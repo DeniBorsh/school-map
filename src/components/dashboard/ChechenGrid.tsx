@@ -27,7 +27,6 @@ const SHORT: Record<string, string> = {
 };
 
 const COLS = 6;
-const ROWS = 6;
 
 type CellDef =
 	| { type: "district"; name: string }
@@ -115,8 +114,8 @@ function CellButton({
 			}
 		>
 			<span
-				className={`font-bold leading-tight text-white drop-shadow-sm ${
-					small ? "text-[5px] sm:text-[6px]" : "p-1.5 text-[8px] sm:text-[10px]"
+				className={`max-w-full truncate font-bold leading-tight text-white drop-shadow-sm ${
+					small ? "text-[5px] sm:text-[6px]" : "p-1 text-[8px] sm:p-1.5 sm:text-[10px]"
 				}`}
 			>
 				{text}
@@ -135,53 +134,58 @@ export function ChechenGrid({
 	return (
 		<div className="flex flex-col gap-2">
 			<div
-				className="mx-auto grid w-full max-w-[320px] gap-0.5 sm:max-w-[420px] sm:gap-[3px] md:max-w-[520px] lg:max-w-[516px]"
+				className="mx-auto grid w-full max-w-[340px] gap-0.5 sm:max-w-[420px] sm:gap-[3px] md:max-w-[480px] lg:max-w-[min(516px,calc(100dvh-13rem))]"
 				style={{
-					gridTemplateColumns: `repeat(${COLS}, 1fr)`,
-					aspectRatio: `${COLS} / ${ROWS}`,
+					gridTemplateColumns: `repeat(${COLS}, minmax(0, 1fr))`,
 				}}
 			>
 				{GRID.map((row, ri) =>
 					row.map((cell, ci) => {
 						const key = `${ri}-${ci}`;
-
-						if (cell.type === "empty") {
-							return <div key={key} />;
-						}
-
-						if (cell.type === "grozny") {
-							return (
-								<div
-									key={key}
-									className="relative overflow-hidden rounded-md p-[2px]"
-									style={{ backgroundColor: groznyColor }}
-									title="г. Грозный"
-								>
-									<button
-										onClick={() =>
-											groznyMain && onSelect(groznyMain.district.id!)
-										}
-										className="absolute inset-0 z-10 cursor-pointer transition hover:bg-white/10 active:scale-[0.97]"
-										title="г. Грозный"
-									/>
-									<span className="pointer-events-none absolute bottom-1 left-1.5 z-20 text-[8px] font-bold text-white/90 drop-shadow-sm sm:text-[10px]">
-										Грозный
-									</span>
-								</div>
-							);
-						}
-
 						return (
-							<CellButton
-								key={key}
-								row={findRow(rows, cell.name)}
-								onSelect={onSelect}
-								label={SHORT[cell.name]}
-							/>
+							// Квадрат через padding-top: работает и там, где
+							// aspect-ratio не поддерживается или перебивается
+							// высотой родителя (старые iPad / Android-планшеты).
+							<div key={key} className="relative w-full pt-[100%]">
+								<div className="absolute inset-0">
+									{renderCell(cell)}
+								</div>
+							</div>
 						);
 					}),
 				)}
 			</div>
 		</div>
 	);
+
+	function renderCell(cell: CellDef) {
+		if (cell.type === "empty") return null;
+
+		if (cell.type === "grozny") {
+			return (
+				<div
+					className="relative h-full w-full overflow-hidden rounded-md"
+					style={{ backgroundColor: groznyColor }}
+					title="г. Грозный"
+				>
+					<button
+						onClick={() => groznyMain && onSelect(groznyMain.district.id!)}
+						className="absolute inset-0 z-10 cursor-pointer transition hover:bg-white/10 active:scale-[0.97]"
+						title="г. Грозный"
+					/>
+					<span className="pointer-events-none absolute bottom-1 left-1.5 right-1 z-20 truncate text-[8px] font-bold text-white/90 drop-shadow-sm sm:text-[10px]">
+						Грозный
+					</span>
+				</div>
+			);
+		}
+
+		return (
+			<CellButton
+				row={findRow(rows, cell.name)}
+				onSelect={onSelect}
+				label={SHORT[cell.name]}
+			/>
+		);
+	}
 }

@@ -27,7 +27,7 @@ export function MapPage() {
 
 	if (!isOnline) {
 		return (
-			<div className="flex h-screen flex-col items-center justify-center gap-4 bg-neutral-50 dark:bg-neutral-900 px-4 text-center">
+			<div className="h-app flex flex-col items-center justify-center gap-4 bg-neutral-50 dark:bg-neutral-900 px-4 text-center">
 				<svg
 					className="h-16 w-16 text-neutral-300 dark:text-neutral-600"
 					fill="none"
@@ -58,6 +58,13 @@ export function MapPage() {
 		);
 	}
 
+	return <MapView />;
+}
+
+// Хуки карты вынесены в отдельный компонент: раньше они вызывались после
+// раннего return для офлайна, и при смене сети React падал с ошибкой
+// «Rendered more/fewer hooks than expected».
+function MapView() {
 	const mapRef = useRef<YandexMapHandle>(null);
 	const [searchParams] = useSearchParams();
 	const districtParam = searchParams.get("district");
@@ -164,8 +171,8 @@ export function MapPage() {
 	}, [selectedDistrict]);
 
 	return (
-		<div className="relative h-screen bg-neutral-100 dark:bg-neutral-800">
-			<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-6 lg:hidden">
+		<div className="h-app relative overflow-hidden bg-neutral-100 dark:bg-neutral-800">
+			<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-6 md:hidden">
 				<div className="w-full max-w-sm rounded-2xl bg-white dark:bg-neutral-800 p-6 text-center shadow-2xl">
 					<svg
 						className="mx-auto mb-4 h-12 w-12 text-amber-500"

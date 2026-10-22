@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
 	useDashboardData,
@@ -121,7 +121,7 @@ function DistrictSummaryPanel({
 			<h3 className="text-sm font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
 				{selected.shortName}
 			</h3>
-			<div className="grid grid-cols-3 gap-2">
+			<div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-2">
 				{score != null && (
 					<BigStat
 						label="Балл мониторинга"
@@ -173,7 +173,7 @@ function DistrictSummaryPanel({
 					/>
 				))}
 			</div>
-			<div className="mt-2 hidden lg:block">
+			<div className="mt-2 hidden md:block">
 				<Link
 					to={`/map?district=${selected.district.id}`}
 					className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 active:scale-[0.97]"
@@ -268,7 +268,7 @@ function SchoolDetailPanel({
 				{school.coords && district.id != null && (
 					<Link
 						to={`/map?district=${district.id}&school=${encodeURIComponent(school.name)}`}
-						className="col-span-3 hidden items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 active:scale-[0.97] lg:flex"
+						className="col-span-3 hidden items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 active:scale-[0.97] md:flex"
 					>
 						<svg
 							className="h-4 w-4"
@@ -309,7 +309,7 @@ function RepublicTotalsGrid({
 	extraColumns: ExtraColumn[];
 }) {
 	return (
-		<div className="grid grid-cols-3 gap-2 p-4">
+		<div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3 sm:p-4 md:grid-cols-4 lg:grid-cols-3">
 			<BigStat
 				label="Заполненность школ"
 				value={`${totals.fillRate.toFixed(1)}%`}
@@ -388,14 +388,36 @@ export function DashboardPage() {
 	const [expandedCard, setExpandedCard] = useState<number | null>(null);
 	const [tab, setTab] = useState<"districts" | "republic">("districts");
 	const [selectedSchool, setSelectedSchool] = useState<School | null>(null);
+	const [schoolTableExpanded, setSchoolTableExpanded] = useState(false);
+	const detailPanelRef = useRef<HTMLDivElement>(null);
+
+	const handleSelectSchool = (school: School) => {
+		setSelectedSchool(school);
+		setSchoolTableExpanded(false);
+		// На планшете панель с деталями находится под таблицей — показываем её.
+		if (
+			window.matchMedia("(min-width: 768px) and (max-width: 1023.98px)")
+				.matches
+		) {
+			requestAnimationFrame(() =>
+				detailPanelRef.current?.scrollIntoView({
+					behavior: "smooth",
+					block: "start",
+				}),
+			);
+		}
+	};
 
 	useEffect(() => {
 		setSelectedSchool(null);
+		// На телефоне/планшете страница прокручивается целиком: без этого район,
+		// выбранный из плиток внизу, открывался прокрученным вниз.
+		window.scrollTo({ top: 0 });
 	}, [selected?.district.id]);
 
 	if (noData) {
 		return (
-			<div className="flex h-screen flex-col items-center justify-center gap-4 bg-neutral-50 dark:bg-neutral-900 px-4 text-center">
+			<div className="h-app flex flex-col items-center justify-center gap-4 bg-neutral-50 dark:bg-neutral-900 px-4 text-center">
 				<svg
 					className="h-16 w-16 text-neutral-300 dark:text-neutral-600"
 					fill="none"
@@ -427,8 +449,8 @@ export function DashboardPage() {
 
 	if (selected) {
 		return (
-			<div className="flex flex-col bg-neutral-50 dark:bg-neutral-900 lg:h-screen">
-				<div className="mx-auto flex min-h-0 w-full max-w-screen-sm flex-1 flex-col lg:mx-0 lg:max-w-none lg:flex-row">
+			<div className="lg-h-app flex flex-col bg-neutral-50 dark:bg-neutral-900">
+				<div className="mx-auto flex min-h-0 w-full max-w-screen-sm flex-1 flex-col md:max-w-none lg:mx-0 lg:flex-row">
 					<div className="flex min-w-0 flex-col p-4 lg:min-h-0 lg:flex-1 lg:p-6">
 						<div className="mb-4 flex flex-col gap-3">
 							<div className="flex flex-wrap items-center gap-2 sm:gap-3 lg:gap-4">
@@ -472,7 +494,7 @@ export function DashboardPage() {
 							)}
 						</div>
 
-						<div className="flex h-[60vh] flex-col overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-sm dark:shadow-neutral-900/30 lg:h-auto lg:min-h-0 lg:flex-1">
+						<div className="flex h-[60vh] flex-col overflow-hidden rounded-2xl md:h-[70vh] border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-sm dark:shadow-neutral-900/30 lg:h-auto lg:min-h-0 lg:flex-1">
 							<div className="flex shrink-0 flex-col gap-2 border-b border-neutral-100 dark:border-neutral-700 bg-neutral-50/60 dark:bg-neutral-800/60 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
 								<div className="flex items-center gap-3">
 									<button
@@ -494,7 +516,7 @@ export function DashboardPage() {
 											/>
 										</svg>
 									</button>
-									<h3 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
+									<h3 className="whitespace-nowrap text-sm font-semibold text-neutral-700 dark:text-neutral-300">
 										Показатели по школам
 									</h3>
 									<input
@@ -502,12 +524,47 @@ export function DashboardPage() {
 										value={schoolQuery}
 										onChange={(e) => setSchoolQuery(e.target.value)}
 										placeholder="Поиск школы..."
-										className="w-36 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-1 text-xs text-neutral-800 dark:text-neutral-200 outline-none placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:border-blue-400 dark:focus:border-blue-500 focus:ring-1 focus:ring-blue-400/30 dark:focus:ring-blue-500/30 sm:w-44"
+										className="min-w-0 w-36 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-1 text-xs text-neutral-800 dark:text-neutral-200 outline-none placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:border-blue-400 dark:focus:border-blue-500 focus:ring-1 focus:ring-blue-400/30 dark:focus:ring-blue-500/30 sm:w-44"
 									/>
 								</div>
-								<span className="text-xs text-neutral-400 dark:text-neutral-500">
-									{sortedSchools.length} {schoolWord(sortedSchools.length)}
-								</span>
+								<div className="flex items-center gap-3">
+									<span className="whitespace-nowrap text-xs text-neutral-400 dark:text-neutral-500">
+										{sortedSchools.length} {schoolWord(sortedSchools.length)}
+									</span>
+									<button
+										onClick={() => setSchoolTableExpanded((e) => !e)}
+										className="hidden cursor-pointer items-center gap-2 rounded-lg bg-[#1e3a5f] px-3 py-1.5 text-xs font-semibold text-white shadow transition hover:bg-[#264d73] active:scale-95 lg:inline-flex"
+										title={
+											schoolTableExpanded
+												? "Свернуть таблицу"
+												: "Развернуть таблицу на всю ширину"
+										}
+									>
+										<svg
+											className="h-4 w-4"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											{schoolTableExpanded ? (
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													strokeWidth={2}
+													d="M9 9L4 4m0 0v4m0-4h4m6 6l5 5m0 0v-4m0 4h-4"
+												/>
+											) : (
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													strokeWidth={2}
+													d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5"
+												/>
+											)}
+										</svg>
+										{schoolTableExpanded ? "Свернуть" : "Развернуть"}
+									</button>
+								</div>
 							</div>
 							<div className="flex-1 overflow-auto table-scroll">
 								<SchoolTable
@@ -516,13 +573,16 @@ export function DashboardPage() {
 									sort={schoolSort}
 									onToggleSort={toggleSchoolSort}
 									selectedSchoolName={selectedSchool?.name ?? null}
-									onSelectSchool={setSelectedSchool}
+									onSelectSchool={handleSelectSchool}
 								/>
 							</div>
 						</div>
 					</div>
 
-					<div className="flex w-full shrink-0 flex-col gap-4 border-t border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-4 lg:h-full lg:w-96 lg:overflow-y-auto lg:border-l lg:border-t-0 lg:p-6">
+					<div
+						ref={detailPanelRef}
+						className={`flex w-full shrink-0 scroll-mt-4 flex-col gap-4 border-t border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-4 md:p-6 lg:h-full lg:w-96 lg:overflow-y-auto lg:border-l lg:border-t-0 ${schoolTableExpanded ? "lg:hidden" : ""}`}
+					>
 						{selectedSchool ? (
 							<SchoolDetailPanel
 								school={selectedSchool}
@@ -543,11 +603,11 @@ export function DashboardPage() {
 	}
 
 	return (
-		<div className="flex flex-col bg-neutral-50 dark:bg-neutral-900 lg:h-screen">
-			<div className="mx-auto flex w-full max-w-screen-sm items-center gap-2 px-4 pt-4 md:hidden lg:mx-0 lg:max-w-none">
+		<div className="lg-h-app flex flex-col bg-neutral-50 dark:bg-neutral-900">
+			<div className="mx-auto flex w-full max-w-screen-sm items-center gap-2 px-4 pt-4 md:max-w-none lg:hidden">
 				<Link
 					to="/map"
-					className="hidden items-center gap-1.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-2 text-xs font-semibold text-neutral-700 dark:text-neutral-300 shadow-sm dark:shadow-neutral-900/30 transition hover:bg-neutral-50 dark:hover:bg-neutral-700 active:scale-95 sm:inline-flex"
+					className="hidden items-center gap-1.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-2 text-xs font-semibold text-neutral-700 dark:text-neutral-300 shadow-sm dark:shadow-neutral-900/30 transition hover:bg-neutral-50 dark:hover:bg-neutral-700 active:scale-95 md:inline-flex"
 				>
 					<svg
 						className="h-3.5 w-3.5"
@@ -810,11 +870,11 @@ export function DashboardPage() {
 							<table className="w-full border-collapse text-[13px]">
 								<thead className="sticky top-0 z-30 bg-[#1e3a5f]">
 									<tr className="bg-[#1e3a5f] text-white">
-										<th className="sticky left-0 z-40 w-14 bg-[#1e3a5f] py-3 pl-5 text-left text-[11px] font-semibold uppercase tracking-wider text-white/70">
+										<th className="sticky left-0 z-40 w-12 min-w-12 max-w-12 bg-[#1e3a5f] py-3 pl-4 pr-1 text-left text-[11px] font-semibold uppercase tracking-wider text-white/70">
 											#
 										</th>
 										<th
-											className="sticky left-8 z-40 min-w-50 bg-[#1e3a5f] py-3 pl-5 pr-6 text-left text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition shadow-[inset_-1px_0_0_0_#d4d4d4,6px_0_8px_-6px_rgba(0,0,0,0.25)] dark:shadow-[inset_-1px_0_0_0_#525252,6px_0_8px_-6px_rgba(0,0,0,0.25)]"
+											className="sticky left-12 z-40 min-w-50 bg-[#1e3a5f] py-3 pl-5 pr-6 text-left text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition shadow-[inset_-1px_0_0_0_#d4d4d4,6px_0_8px_-6px_rgba(0,0,0,0.25)] dark:shadow-[inset_-1px_0_0_0_#525252,6px_0_8px_-6px_rgba(0,0,0,0.25)]"
 											onClick={() => toggleDistrictSort("name")}
 										>
 											Район
@@ -919,15 +979,19 @@ export function DashboardPage() {
 														onClick={() => toggleDistrictSort(sk)}
 														title={col.label}
 													>
-														{col.label}
-														<SortArrow
-															active={districtSort.key === sk}
-															dir={
-																districtSort.key === sk
-																	? districtSort.dir
-																	: "asc"
-															}
-														/>
+														<span className="inline-flex items-center justify-center">
+															<span className="line-clamp-3 max-w-[200px] whitespace-normal leading-snug">
+																{col.label}
+															</span>
+															<SortArrow
+																active={districtSort.key === sk}
+																dir={
+																	districtSort.key === sk
+																		? districtSort.dir
+																		: "asc"
+																}
+															/>
+														</span>
 													</th>
 												);
 											})}
@@ -947,12 +1011,12 @@ export function DashboardPage() {
 												className={`group cursor-pointer border-b border-neutral-100 dark:border-neutral-700 transition hover:bg-blue-50 dark:hover:bg-blue-900 ${i % 2 === 0 ? "bg-white dark:bg-neutral-800" : "bg-neutral-100 dark:bg-neutral-800"}`}
 											>
 												<td
-													className={`sticky left-0 z-10 w-14 ${stickyBg} py-4 pl-5 font-medium text-neutral-400 dark:text-neutral-500 transition-colors`}
+													className={`sticky left-0 z-10 w-12 min-w-12 max-w-12 ${stickyBg} py-4 pl-4 pr-1 font-medium text-neutral-400 dark:text-neutral-500 transition-colors`}
 												>
 													{i + 1}
 												</td>
 												<td
-													className={`sticky left-8 z-20 ${stickyBg} py-4 pl-5 pr-6 transition-colors shadow-[inset_-1px_0_0_0_#d4d4d4,6px_0_8px_-6px_rgba(0,0,0,0.18)] dark:shadow-[inset_-1px_0_0_0_#525252,6px_0_8px_-6px_rgba(0,0,0,0.55)]`}
+													className={`sticky left-12 z-20 ${stickyBg} py-4 pl-5 pr-6 transition-colors shadow-[inset_-1px_0_0_0_#d4d4d4,6px_0_8px_-6px_rgba(0,0,0,0.18)] dark:shadow-[inset_-1px_0_0_0_#525252,6px_0_8px_-6px_rgba(0,0,0,0.55)]`}
 												>
 													<div className="flex items-center gap-3">
 														<span
@@ -1007,7 +1071,7 @@ export function DashboardPage() {
 
 				{!expanded && (
 					<div className="flex w-full flex-col gap-5 p-4 lg:w-1/2 xl:w-[38%] lg:overflow-y-auto lg:p-6 lg:pl-0">
-						<div className="hidden items-center gap-2 md:flex">
+						<div className="hidden shrink-0 items-center gap-2 lg:flex">
 							<Link
 								to="/map"
 								className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-4 py-2.5 text-sm font-semibold text-neutral-700 dark:text-neutral-300 shadow-sm dark:shadow-neutral-900/30 transition hover:bg-neutral-50 dark:hover:bg-neutral-700 active:scale-[0.97]"
@@ -1055,7 +1119,7 @@ export function DashboardPage() {
 							<ThemeToggle />
 						</div>
 
-						<div className="flex gap-1 rounded-2xl bg-neutral-200/60 dark:bg-neutral-700/60 p-1">
+						<div className="flex shrink-0 gap-1 rounded-2xl bg-neutral-200/60 dark:bg-neutral-700/60 p-1">
 							<TabBtn
 								active={tab === "districts"}
 								onClick={() => setTab("districts")}
@@ -1071,11 +1135,15 @@ export function DashboardPage() {
 						</div>
 
 						{tab === "republic" ? (
-							<div className="overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-sm dark:shadow-neutral-900/30">
-								<RepublicTotalsGrid
-									totals={totals}
-									extraColumns={extraColumns}
-								/>
+							// min-h-0 + собственная прокрутка: раньше карточка с overflow-hidden
+							// сжималась до высоты колонки и нижние показатели обрезались.
+							<div className="flex flex-col overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-sm dark:shadow-neutral-900/30 lg:min-h-0 lg:flex-1">
+								<div className="thin-scroll lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
+									<RepublicTotalsGrid
+										totals={totals}
+										extraColumns={extraColumns}
+									/>
+								</div>
 							</div>
 						) : (
 							<ChechenGrid rows={rows} onSelect={(id) => setSelectedId(id)} />

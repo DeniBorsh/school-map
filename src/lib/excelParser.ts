@@ -109,6 +109,14 @@ function toInt(v: Cell): number | null {
 	return n != null ? Math.trunc(n) : null;
 }
 
+// Координаты в файле иногда вводят с хвостовой запятой («43.153444,»)
+// или с запятой вместо точки — такие школы пропадали с карты.
+function toCoord(v: Cell): number | null {
+	if (typeof v !== "string") return toFloat(v);
+	const s = v.trim().replace(/^[,;\s]+|[,;\s]+$/g, "").replace(",", ".");
+	return s ? toFloat(s) : null;
+}
+
 function toStr(v: Cell): string | null {
 	if (isNan(v)) return null;
 	const s = String(v).trim();
@@ -230,10 +238,14 @@ function classifyExtra(
 	hasDecimalFormat: boolean,
 	label: string,
 ): ExtraType | null {
-	const non = values.filter((v) => v != null && v !== "");
+	const non = values.filter(
+		(v) => v != null && !(typeof v === "string" && v.trim() === ""),
+	);
 	if (non.length === 0) return null;
 	let allNumeric = true;
 	let hasPercentSign = false;
+	let hasPositiveToken = false;
+	let freeTextCount = 0;
 	const numbers: number[] = [];
 	for (const v of non) {
 		if (typeof v === "number") {
@@ -242,10 +254,12 @@ function classifyExtra(
 		}
 		if (typeof v === "boolean") {
 			allNumeric = false;
+			hasPositiveToken = true;
 			continue;
 		}
 		const s = String(v).trim().toLowerCase();
 		if (NEGATIVE_TOKENS.has(s) || POSITIVE_TOKENS.has(s)) {
+			if (POSITIVE_TOKENS.has(s)) hasPositiveToken = true;
 			allNumeric = false;
 			continue;
 		}
@@ -259,9 +273,19 @@ function classifyExtra(
 				continue;
 			}
 		}
+		freeTextCount += 1;
 		allNumeric = false;
 	}
-	if (!allNumeric) return "boolean";
+	if (!allNumeric) {
+		// Столбец с количествами (например «10 класс»), где у части школ
+		// вместо числа стоит «-», «нет» или пояснение. Раньше такой столбец
+		// уходил в «Да/Нет» и в итогах показывался как 100%.
+		const isMostlyCounts =
+			!hasPositiveToken &&
+			numbers.some((n) => n > 1 || n !== Math.floor(n)) &&
+			(freeTextCount === 0 || numbers.length / non.length >= 0.8);
+		if (!isMostlyCounts) return "boolean";
+	}
 	if (numbers.length === 0) return null;
 	if (hasPercentFormat || hasPercentSign) return "percent";
 	if (hasDecimalFormat) return "ratio";
@@ -460,11 +484,13 @@ function parseFlat(
 		const row = rows[i]!;
 		const name = toStr(cell(row, required.name));
 		const site = toStr(cell(row, required.site));
-		const lat = toFloat(cell(row, required.lat));
-		const lon = toFloat(cell(row, required.lon));
+		const lat = toCoord(cell(row, required.lat));
+		const lon = toCoord(cell(row, required.lon));
 		const districtRaw = toStr(cell(row, required.district));
 		const districtName = normalizeDistrictName(districtRaw);
-		const institutionType = toStr(cell(row, required.institution_type));
+		const institutionType =
+			toStr(cell(row, required.institution_type))?.replace(/\s+/g, " ") ??
+			null;
 
 		const isSchool = !!site || (lat != null && lon != null);
 		if (isSchool) {
@@ -518,8 +544,8 @@ function parseFlat(
 		if (c.kind === "school") {
 			const row = c.row;
 			const name = toStr(cell(row, required.name)) ?? "";
-			const lat = toFloat(cell(row, required.lat));
-			const lon = toFloat(cell(row, required.lon));
+			const lat = toCoord(cell(row, required.lat));
+			const lon = toCoord(cell(row, required.lon));
 			const coords: [number, number] | null =
 				lat != null && lon != null ? [lat, lon] : null;
 

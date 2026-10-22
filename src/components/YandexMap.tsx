@@ -89,9 +89,13 @@ export const YandexMap = forwardRef<YandexMapHandle, Props>(function YandexMap(
 
 			mapRef.current = new ymaps.Map(
 				containerRef.current,
-				{ center, zoom, controls: ["zoomControl"] },
+				{ center, zoom, controls: [] },
 				{ suppressMapOpenBlock: true },
 			);
+			// По умолчанию зум-контрол стоит слева и прячется под боковой панелью.
+			mapRef.current.controls.add("zoomControl", {
+				position: { right: 16, top: 76 },
+			});
 
 			setReady(true);
 		});
