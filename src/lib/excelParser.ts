@@ -230,10 +230,14 @@ function classifyExtra(
 	hasDecimalFormat: boolean,
 	label: string,
 ): ExtraType | null {
-	const non = values.filter((v) => v != null && v !== "");
+	const non = values.filter(
+		(v) => v != null && !(typeof v === "string" && v.trim() === ""),
+	);
 	if (non.length === 0) return null;
 	let allNumeric = true;
 	let hasPercentSign = false;
+	let hasPositiveToken = false;
+	let freeTextCount = 0;
 	const numbers: number[] = [];
 	for (const v of non) {
 		if (typeof v === "number") {
@@ -242,10 +246,12 @@ function classifyExtra(
 		}
 		if (typeof v === "boolean") {
 			allNumeric = false;
+			hasPositiveToken = true;
 			continue;
 		}
 		const s = String(v).trim().toLowerCase();
 		if (NEGATIVE_TOKENS.has(s) || POSITIVE_TOKENS.has(s)) {
+			if (POSITIVE_TOKENS.has(s)) hasPositiveToken = true;
 			allNumeric = false;
 			continue;
 		}
@@ -259,9 +265,19 @@ function classifyExtra(
 				continue;
 			}
 		}
+		freeTextCount += 1;
 		allNumeric = false;
 	}
-	if (!allNumeric) return "boolean";
+	if (!allNumeric) {
+		// Столбец с количествами (например «10 класс»), где у части школ
+		// вместо числа стоит «-», «нет» или пояснение. Раньше такой столбец
+		// уходил в «Да/Нет» и в итогах показывался как 100%.
+		const isMostlyCounts =
+			!hasPositiveToken &&
+			numbers.some((n) => n > 1 || n !== Math.floor(n)) &&
+			(freeTextCount === 0 || numbers.length / non.length >= 0.8);
+		if (!isMostlyCounts) return "boolean";
+	}
 	if (numbers.length === 0) return null;
 	if (hasPercentFormat || hasPercentSign) return "percent";
 	if (hasDecimalFormat) return "ratio";

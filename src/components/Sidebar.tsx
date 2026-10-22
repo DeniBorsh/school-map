@@ -29,7 +29,7 @@ export function Sidebar({
 	onBackToSchools,
 }: SidebarProps) {
 	return (
-		<aside className="absolute bottom-4 left-4 top-4 z-10 flex w-95 flex-col overflow-hidden rounded-2xl bg-white dark:bg-neutral-800 shadow-[0_0_40px_rgba(0,0,0,0.08)] dark:shadow-[0_0_40px_rgba(0,0,0,0.3)]">
+		<aside className="absolute bottom-4 left-4 top-4 z-10 flex w-80 flex-col lg:w-95 overflow-hidden rounded-2xl bg-white dark:bg-neutral-800 shadow-[0_0_40px_rgba(0,0,0,0.08)] dark:shadow-[0_0_40px_rgba(0,0,0,0.3)]">
 			{loading ? (
 				<div className="flex flex-1 items-center justify-center">
 					<Loading />

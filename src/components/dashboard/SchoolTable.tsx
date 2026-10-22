@@ -10,9 +10,9 @@ import {
 import { SortArrow } from "@/components/ui/SortArrow";
 
 const TH =
-	"py-3 px-3 text-center text-[11px] font-semibold uppercase tracking-wider text-white/70 whitespace-nowrap";
+	"py-2.5 px-3 text-center text-[11px] font-semibold uppercase tracking-wider text-white/70 whitespace-nowrap";
 const TD =
-	"py-4 px-3 text-center font-medium text-neutral-700 dark:text-neutral-300 whitespace-nowrap";
+	"py-2.5 px-3 text-center font-medium text-neutral-700 dark:text-neutral-300 whitespace-nowrap";
 
 function ExtraPill({ value }: { value: boolean }) {
 	const cls = value
@@ -31,7 +31,7 @@ function renderExtraCell(school: School, col: ExtraColumn) {
 	const v = school.extras?.[col.key];
 	if (col.type === "boolean") {
 		return (
-			<td className="py-4 px-3 text-center whitespace-nowrap">
+			<td className="py-2.5 px-3 text-center whitespace-nowrap">
 				{v == null ? (
 					<span className="text-neutral-400 dark:text-neutral-500">—</span>
 				) : (
@@ -232,11 +232,11 @@ export function SchoolTable({
 			<table className="hidden w-full border-collapse text-[13px] md:table">
 				<thead className="sticky top-0 z-30 bg-[#1e3a5f]">
 					<tr className="bg-[#1e3a5f] text-white">
-						<th className="sticky left-0 z-40 w-14 bg-[#1e3a5f] py-3 pl-5 text-left text-[11px] font-semibold uppercase tracking-wider text-white/70">
+						<th className="sticky left-0 z-40 w-12 min-w-12 max-w-12 bg-[#1e3a5f] py-2.5 pl-4 pr-1 text-left text-[11px] font-semibold uppercase tracking-wider text-white/70">
 							#
 						</th>
 						<th
-							className="sticky left-10 z-40 min-w-55 bg-[#1e3a5f] py-3 pl-3 pr-4 text-left text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition shadow-[inset_-1px_0_0_0_#d4d4d4,6px_0_8px_-6px_rgba(0,0,0,0.25)] dark:shadow-[inset_-1px_0_0_0_#525252,6px_0_8px_-6px_rgba(0,0,0,0.25)]"
+							className="sticky left-12 z-40 bg-[#1e3a5f] py-2.5 pl-3 pr-4 text-left text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition shadow-[inset_-1px_0_0_0_#d4d4d4,6px_0_8px_-6px_rgba(0,0,0,0.25)] dark:shadow-[inset_-1px_0_0_0_#525252,6px_0_8px_-6px_rgba(0,0,0,0.25)]"
 							onClick={() => onToggleSort("name")}
 						>
 							Название
@@ -314,11 +314,15 @@ export function SchoolTable({
 									onClick={() => onToggleSort(sk)}
 									title={col.label}
 								>
-									{col.label}
-									<SortArrow
-										active={sort.key === sk}
-										dir={sort.key === sk ? sort.dir : "asc"}
-									/>
+									<span className="inline-flex items-center justify-center">
+										<span className="line-clamp-3 max-w-[200px] whitespace-normal leading-snug">
+											{col.label}
+										</span>
+										<SortArrow
+											active={sort.key === sk}
+											dir={sort.key === sk ? sort.dir : "asc"}
+										/>
+									</span>
 								</th>
 							);
 						})}
@@ -347,14 +351,14 @@ export function SchoolTable({
 								}`}
 							>
 								<td
-									className={`sticky left-0 z-10 w-14 ${stickyBg} py-4 pl-5 pr-3 font-medium text-neutral-400 dark:text-neutral-500 transition-colors`}
+									className={`sticky left-0 z-10 w-12 min-w-12 max-w-12 ${stickyBg} py-2.5 pl-4 pr-1 font-medium text-neutral-400 dark:text-neutral-500 transition-colors`}
 								>
 									{i + 1}
 								</td>
 								<td
-									className={`sticky left-10 z-20 ${stickyBg} py-4 pl-3 pr-4 transition-colors shadow-[inset_-1px_0_0_0_#d4d4d4,6px_0_8px_-6px_rgba(0,0,0,0.18)] dark:shadow-[inset_-1px_0_0_0_#525252,6px_0_8px_-6px_rgba(0,0,0,0.55)]`}
+									className={`sticky left-12 z-20 ${stickyBg} py-2.5 pl-3 pr-4 transition-colors shadow-[inset_-1px_0_0_0_#d4d4d4,6px_0_8px_-6px_rgba(0,0,0,0.18)] dark:shadow-[inset_-1px_0_0_0_#525252,6px_0_8px_-6px_rgba(0,0,0,0.55)]`}
 								>
-									<div className="flex items-center gap-3">
+									<div className="flex w-[clamp(200px,30vw,340px)] items-center gap-3">
 										<span
 											title={
 												fr < 100
@@ -364,11 +368,17 @@ export function SchoolTable({
 											className={`h-2.5 w-2.5 shrink-0 rounded-full ${fr < 100 ? "bg-rose-500" : "bg-emerald-500"}`}
 										/>
 										<div className="min-w-0">
-											<p className="font-semibold text-neutral-800 dark:text-neutral-200">
+											<p
+												className="line-clamp-2 font-semibold leading-snug text-neutral-800 dark:text-neutral-200"
+												title={s.name}
+											>
 												{s.name}
 											</p>
 											{s.address && (
-												<p className="mt-0.5 truncate text-xs text-neutral-400 dark:text-neutral-500">
+												<p
+													className="mt-0.5 truncate text-xs text-neutral-400 dark:text-neutral-500"
+													title={s.address}
+												>
 													{s.address}
 												</p>
 											)}
@@ -380,14 +390,15 @@ export function SchoolTable({
 								<td className={TD}>{fmt(s.shift)}</td>
 								<td className={TD}>{fmt(s.workers)}</td>
 								<td className={TD}>{fmt(s.teachers)}</td>
-								<td className="py-4 px-3 text-center">
+								<td className="py-2.5 px-3 text-center">
 									{url ? (
 										<a
+											title={s.site ?? undefined}
 											href={url}
 											target="_blank"
 											rel="noopener noreferrer"
 											onClick={(e) => e.stopPropagation()}
-											className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"
+											className="mx-auto block max-w-[200px] truncate text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"
 										>
 											{s.site}
 										</a>
