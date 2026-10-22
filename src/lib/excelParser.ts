@@ -742,70 +742,66 @@ function collectFormatColumns(sheet: XLSX.WorkSheet): {
 	return { percent, decimal };
 }
 
-export function parseExcelFile(file: File): Promise<ParsedData> {
+// Увеличивать при каждом изменении логики разбора: сохранённые данные,
+// разобранные старой версией, будут автоматически разобраны заново.
+export const PARSER_VERSION = 4;
+
+export function parseExcelBuffer(data: Uint8Array): ParsedData {
+	const workbook = XLSX.read(data, {
+		type: "array",
+		cellNF: true,
+		cellStyles: true,
+	});
+	const sheet = workbook.Sheets[workbook.SheetNames[0]!]!;
+	const sheetRange = sheet["!ref"] ? XLSX.utils.decode_range(sheet["!ref"]) : null;
+	const { percent: percentFormatCols, decimal: decimalFormatCols } =
+		collectFormatColumns(sheet);
+	const raw: Cell[][] = XLSX.utils.sheet_to_json(sheet, {
+		header: 1,
+		defval: null,
+	});
+
+	const nonEmptyRows = raw
+		.map((row, rawIndex) => ({ row, rawIndex }))
+		.filter(({ row }) =>
+			row.some((c) => c !== null && c !== undefined && c !== ""),
+		);
+	const rows = nonEmptyRows.map(({ row }) => row);
+
+	if (rows.length === 0) {
+		return {
+			districts: [],
+			schools: [],
+			extraColumns: [],
+			institutionTypes: [],
+			republicTotals: null,
+		};
+	}
+
+	const getCellColor: CellColorGetter = (rowIndex, colIndex) => {
+		const sourceRowIndex = nonEmptyRows[rowIndex]?.rawIndex;
+		return sourceRowIndex == null
+			? null
+			: getCellFillColor(
+					sheet,
+					sourceRowIndex + (sheetRange?.s.r ?? 0),
+					colIndex == null ? null : colIndex + (sheetRange?.s.c ?? 0),
+				);
+	};
+
+	return parseFlat(rows, percentFormatCols, decimalFormatCols, getCellColor);
+}
+
+export function readFileBytes(file: File): Promise<Uint8Array> {
 	return new Promise((resolve, reject) => {
 		const reader = new FileReader();
-		reader.onload = (e) => {
-			try {
-				const data = new Uint8Array(e.target!.result as ArrayBuffer);
-				const workbook = XLSX.read(data, {
-					type: "array",
-					cellNF: true,
-					cellStyles: true,
-				});
-				const sheet = workbook.Sheets[workbook.SheetNames[0]!]!;
-				const sheetRange = sheet["!ref"]
-					? XLSX.utils.decode_range(sheet["!ref"])
-					: null;
-				const { percent: percentFormatCols, decimal: decimalFormatCols } =
-					collectFormatColumns(sheet);
-				const raw: Cell[][] = XLSX.utils.sheet_to_json(sheet, {
-					header: 1,
-					defval: null,
-				});
-
-				const nonEmptyRows = raw
-					.map((row, rawIndex) => ({ row, rawIndex }))
-					.filter(({ row }) =>
-						row.some((c) => c !== null && c !== undefined && c !== ""),
-					);
-				const rows = nonEmptyRows.map(({ row }) => row);
-
-				if (rows.length === 0) {
-					resolve({
-						districts: [],
-						schools: [],
-						extraColumns: [],
-						institutionTypes: [],
-						republicTotals: null,
-					});
-					return;
-				}
-
-				const getCellColor: CellColorGetter = (rowIndex, colIndex) => {
-					const sourceRowIndex = nonEmptyRows[rowIndex]?.rawIndex;
-					return sourceRowIndex == null
-						? null
-						: getCellFillColor(
-								sheet,
-								sourceRowIndex + (sheetRange?.s.r ?? 0),
-								colIndex == null ? null : colIndex + (sheetRange?.s.c ?? 0),
-							);
-				};
-
-				resolve(
-					parseFlat(
-						rows,
-						percentFormatCols,
-						decimalFormatCols,
-						getCellColor,
-					),
-				);
-			} catch (err) {
-				reject(err);
-			}
-		};
+		reader.onload = (e) =>
+			resolve(new Uint8Array(e.target!.result as ArrayBuffer));
 		reader.onerror = () => reject(new Error("Не удалось прочитать файл"));
 		reader.readAsArrayBuffer(file);
 	});
+}
+
+export async function parseExcelFile(file: File): Promise<ParsedData> {
+	return parseExcelBuffer(await readFileBytes(file));
 }

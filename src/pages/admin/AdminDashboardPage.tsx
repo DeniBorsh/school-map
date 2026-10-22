@@ -1,8 +1,8 @@
 import { type ChangeEvent, type DragEvent, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { parseExcelFile } from "@/lib/excelParser";
-import { setData } from "@/store/dataSlice";
+import { parseExcelBuffer, readFileBytes } from "@/lib/excelParser";
+import { rememberSourceFile, setData } from "@/store/dataSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 
 export function AdminDashboardPage() {
@@ -30,8 +30,10 @@ export function AdminDashboardPage() {
 		setUploading(true);
 
 		try {
-			const result = await parseExcelFile(file);
+			const bytes = await readFileBytes(file);
+			const result = parseExcelBuffer(bytes);
 			dispatch(setData(result));
+			rememberSourceFile(bytes);
 			setUploadResult({
 				ok: true,
 				message: `Загружено: ${result.districts.length} районов, ${result.schools.length} школ`,

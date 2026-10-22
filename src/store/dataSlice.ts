@@ -5,9 +5,16 @@ import type {
 	RepublicTotals,
 	School,
 } from "@/types";
-import { normalizeParsedData } from "@/lib/excelParser";
+import {
+	normalizeParsedData,
+	parseExcelBuffer,
+	PARSER_VERSION,
+} from "@/lib/excelParser";
 
 const STORAGE_KEY = "schools_data_cache_v3";
+// Исходный .xlsx (base64): нужен, чтобы после обновления парсера
+// разобрать файл заново без повторной загрузки.
+const SOURCE_KEY = "schools_source_file_v1";
 
 interface DataState {
 	districts: District[];
@@ -16,6 +23,8 @@ interface DataState {
 	institutionTypes: string[];
 	republicTotals: RepublicTotals | null;
 	loaded: boolean;
+	// Данные разобраны старой версией парсера, а исходного файла нет.
+	stale: boolean;
 }
 
 interface PersistedShape {
@@ -26,7 +35,44 @@ interface PersistedShape {
 	republicTotals: RepublicTotals | null;
 }
 
-function loadFromStorage(): PersistedShape | null {
+function bytesToBase64(bytes: Uint8Array): string {
+	let bin = "";
+	for (let i = 0; i < bytes.length; i += 0x8000) {
+		bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+	}
+	return btoa(bin);
+}
+
+function base64ToBytes(b64: string): Uint8Array {
+	const bin = atob(b64);
+	const bytes = new Uint8Array(bin.length);
+	for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+	return bytes;
+}
+
+export function rememberSourceFile(bytes: Uint8Array) {
+	try {
+		localStorage.setItem(SOURCE_KEY, bytesToBase64(bytes));
+	} catch {
+		try {
+			localStorage.removeItem(SOURCE_KEY);
+		} catch {}
+	}
+}
+
+function reparseSourceFile(): PersistedShape | null {
+	try {
+		const b64 = localStorage.getItem(SOURCE_KEY);
+		if (!b64) return null;
+		const data = parseExcelBuffer(base64ToBytes(b64));
+		saveToStorage(data);
+		return data;
+	} catch {
+		return null;
+	}
+}
+
+function loadFromStorage(): (PersistedShape & { stale: boolean }) | null {
 	try {
 		const raw = localStorage.getItem(STORAGE_KEY);
 		if (!raw) return null;
@@ -37,6 +83,10 @@ function loadFromStorage(): PersistedShape | null {
 			!Array.isArray(parsed.schools)
 		) {
 			return null;
+		}
+		if (parsed.parserVersion !== PARSER_VERSION) {
+			const fresh = reparseSourceFile();
+			if (fresh) return { ...fresh, stale: false };
 		}
 		const normalized = normalizeParsedData({
 			districts: parsed.districts,
@@ -49,7 +99,10 @@ function loadFromStorage(): PersistedShape | null {
 				: [],
 			republicTotals: parsed.republicTotals ?? null,
 		});
-		return normalized;
+		return {
+			...normalized,
+			stale: parsed.parserVersion !== PARSER_VERSION,
+		};
 	} catch {
 		return null;
 	}
@@ -57,7 +110,10 @@ function loadFromStorage(): PersistedShape | null {
 
 function saveToStorage(state: PersistedShape) {
 	try {
-		localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+		localStorage.setItem(
+			STORAGE_KEY,
+			JSON.stringify({ ...state, parserVersion: PARSER_VERSION }),
+		);
 	} catch {}
 }
 
@@ -70,6 +126,7 @@ const initialState: DataState = {
 	institutionTypes: cached?.institutionTypes ?? [],
 	republicTotals: cached?.republicTotals ?? null,
 	loaded: cached !== null,
+	stale: cached?.stale ?? false,
 };
 
 export const dataSlice = createSlice({
@@ -83,6 +140,7 @@ export const dataSlice = createSlice({
 			state.institutionTypes = action.payload.institutionTypes;
 			state.republicTotals = action.payload.republicTotals ?? null;
 			state.loaded = true;
+			state.stale = false;
 			saveToStorage({
 				districts: action.payload.districts,
 				schools: action.payload.schools,

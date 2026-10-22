@@ -22,6 +22,26 @@ import { TabBtn } from "@/components/ui/TabBtn";
 import { SchoolTable } from "@/components/dashboard/SchoolTable";
 import { ChechenGrid } from "@/components/dashboard/ChechenGrid";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { useAppSelector } from "@/store/hooks";
+
+function StaleDataBanner() {
+	const stale = useAppSelector((s) => s.data.stale);
+	if (!stale) return null;
+	return (
+		<div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-200">
+			<span>
+				Приложение обновилось. Загрузите Excel-файл заново, чтобы
+				показатели пересчитались.
+			</span>
+			<Link
+				to="/admin"
+				className="rounded-lg bg-amber-500 px-3 py-1 text-xs font-semibold text-white transition hover:bg-amber-600"
+			>
+				Загрузить
+			</Link>
+		</div>
+	);
+}
 
 function InfoItem({
 	label,
@@ -673,6 +693,7 @@ export function DashboardPage() {
 				<div
 					className={`flex min-w-0 flex-col p-4 lg:min-h-0 lg:p-6 ${expanded ? "lg:flex-1" : "lg:flex-1 lg:w-1/2 xl:w-[62%] lg:shrink-0"}`}
 				>
+					<StaleDataBanner />
 					<div className="mb-3">
 						<InstitutionTypeFilter
 							institutionTypes={institutionTypes}
