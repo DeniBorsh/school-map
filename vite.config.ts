@@ -11,8 +11,6 @@ export default defineConfig(() => {
 			tailwindcss(),
 			VitePWA({
 				registerType: "autoUpdate",
-				// Регистрация вручную в main.tsx: там же периодическая проверка обновлений.
-				injectRegister: false,
 				workbox: {
 					skipWaiting: true,
 					clientsClaim: true,

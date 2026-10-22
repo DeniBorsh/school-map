@@ -742,10 +742,6 @@ function collectFormatColumns(sheet: XLSX.WorkSheet): {
 	return { percent, decimal };
 }
 
-// Увеличивать при каждом изменении логики разбора: сохранённые данные,
-// разобранные старой версией, будут автоматически разобраны заново.
-export const PARSER_VERSION = 4;
-
 export function parseExcelBuffer(data: Uint8Array): ParsedData {
 	const workbook = XLSX.read(data, {
 		type: "array",
