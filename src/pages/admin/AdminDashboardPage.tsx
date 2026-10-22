@@ -1,7 +1,14 @@
-import { type ChangeEvent, type DragEvent, useRef, useState } from "react";
+import {
+	type ChangeEvent,
+	type DragEvent,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
 import { Link } from "react-router-dom";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { parseExcelFile } from "@/lib/excelParser";
+import { parseExcelBuffer, readFileBytes } from "@/lib/excelParser";
+import { resetCacheAndReload, takePendingUpload } from "@/lib/freshUpload";
 import { setData } from "@/store/dataSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 
@@ -17,6 +24,28 @@ export function AdminDashboardPage() {
 		message: string;
 	} | null>(null);
 
+	function applyFile(bytes: Uint8Array) {
+		try {
+			const result = parseExcelBuffer(bytes);
+			dispatch(setData(result));
+			setUploadResult({
+				ok: true,
+				message: `Загружено: ${result.districts.length} районов, ${result.schools.length} школ`,
+			});
+		} catch {
+			setUploadResult({
+				ok: false,
+				message: "Не удалось обработать файл. Проверьте формат (.xlsx)",
+			});
+		}
+	}
+
+	// Файл, загруженный до сброса кэша, разбираем уже свежей версией кода.
+	useEffect(() => {
+		const pending = takePendingUpload();
+		if (pending) applyFile(pending);
+	}, []);
+
 	async function doUpload(file: File) {
 		if (!file.name.toLowerCase().endsWith(".xlsx")) {
 			setUploadResult({
@@ -30,12 +59,9 @@ export function AdminDashboardPage() {
 		setUploading(true);
 
 		try {
-			const result = await parseExcelFile(file);
-			dispatch(setData(result));
-			setUploadResult({
-				ok: true,
-				message: `Загружено: ${result.districts.length} районов, ${result.schools.length} школ`,
-			});
+			const bytes = await readFileBytes(file);
+			if (await resetCacheAndReload(bytes)) return;
+			applyFile(bytes);
 		} catch {
 			setUploadResult({
 				ok: false,
