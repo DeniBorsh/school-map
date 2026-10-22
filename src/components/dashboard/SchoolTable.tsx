@@ -14,6 +14,18 @@ const TH =
 const TD =
 	"py-2.5 px-3 text-center font-medium text-neutral-700 dark:text-neutral-300 whitespace-nowrap";
 
+function fillDotClass(capacity: number | null, fr: number): string {
+	if (!capacity) return "bg-neutral-400 dark:bg-neutral-500";
+	return fr < 100 ? "bg-rose-500" : "bg-emerald-500";
+}
+
+function fillDotTitle(capacity: number | null, fr: number): string {
+	if (!capacity) return "Мощность не указана";
+	return fr < 100
+		? `Заполненность ниже 100% (${fr.toFixed(0)}%)`
+		: `Заполненность ${fr.toFixed(0)}%`;
+}
+
 function ExtraPill({ value }: { value: boolean }) {
 	const cls = value
 		? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
@@ -98,20 +110,17 @@ function MobileSchoolCards({
 							<div className="min-w-0 flex-1">
 								<div className="flex items-center gap-1.5">
 									<span
-										title={
-											fr < 100
-												? `Заполненность ниже 100% (${fr.toFixed(0)}%)`
-												: `Заполненность ${fr.toFixed(0)}%`
-										}
-										className={`h-2 w-2 shrink-0 rounded-full ${fr < 100 ? "bg-rose-500" : "bg-emerald-500"}`}
+										title={fillDotTitle(s.capacity, fr)}
+										className={`h-2 w-2 shrink-0 rounded-full ${fillDotClass(s.capacity, fr)}`}
 									/>
 									<p className="truncate text-sm font-semibold text-neutral-800 dark:text-neutral-200">
 										{s.name}
 									</p>
 								</div>
 								<p className="mt-0.5 text-xs text-neutral-400 dark:text-neutral-500">
-									{fmt(s.students)} уч. / {fmt(s.capacity)} мест ·{" "}
-									{fr.toFixed(0)}%
+									{s.capacity
+										? `${fmt(s.students)} уч. / ${fmt(s.capacity)} мест · ${fr.toFixed(0)}%`
+										: `${fmt(s.students)} уч. · мощность не указана`}
 								</p>
 							</div>
 							<svg
@@ -360,12 +369,8 @@ export function SchoolTable({
 								>
 									<div className="flex w-[clamp(200px,30vw,340px)] items-center gap-3">
 										<span
-											title={
-												fr < 100
-													? `Заполненность ниже 100% (${fr.toFixed(0)}%)`
-													: `Заполненность ${fr.toFixed(0)}%`
-											}
-											className={`h-2.5 w-2.5 shrink-0 rounded-full ${fr < 100 ? "bg-rose-500" : "bg-emerald-500"}`}
+											title={fillDotTitle(s.capacity, fr)}
+											className={`h-2.5 w-2.5 shrink-0 rounded-full ${fillDotClass(s.capacity, fr)}`}
 										/>
 										<div className="min-w-0">
 											<p

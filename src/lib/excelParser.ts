@@ -109,6 +109,14 @@ function toInt(v: Cell): number | null {
 	return n != null ? Math.trunc(n) : null;
 }
 
+// Координаты в файле иногда вводят с хвостовой запятой («43.153444,»)
+// или с запятой вместо точки — такие школы пропадали с карты.
+function toCoord(v: Cell): number | null {
+	if (typeof v !== "string") return toFloat(v);
+	const s = v.trim().replace(/^[,;\s]+|[,;\s]+$/g, "").replace(",", ".");
+	return s ? toFloat(s) : null;
+}
+
 function toStr(v: Cell): string | null {
 	if (isNan(v)) return null;
 	const s = String(v).trim();
@@ -476,11 +484,13 @@ function parseFlat(
 		const row = rows[i]!;
 		const name = toStr(cell(row, required.name));
 		const site = toStr(cell(row, required.site));
-		const lat = toFloat(cell(row, required.lat));
-		const lon = toFloat(cell(row, required.lon));
+		const lat = toCoord(cell(row, required.lat));
+		const lon = toCoord(cell(row, required.lon));
 		const districtRaw = toStr(cell(row, required.district));
 		const districtName = normalizeDistrictName(districtRaw);
-		const institutionType = toStr(cell(row, required.institution_type));
+		const institutionType =
+			toStr(cell(row, required.institution_type))?.replace(/\s+/g, " ") ??
+			null;
 
 		const isSchool = !!site || (lat != null && lon != null);
 		if (isSchool) {
@@ -534,8 +544,8 @@ function parseFlat(
 		if (c.kind === "school") {
 			const row = c.row;
 			const name = toStr(cell(row, required.name)) ?? "";
-			const lat = toFloat(cell(row, required.lat));
-			const lon = toFloat(cell(row, required.lon));
+			const lat = toCoord(cell(row, required.lat));
+			const lon = toCoord(cell(row, required.lon));
 			const coords: [number, number] | null =
 				lat != null && lon != null ? [lat, lon] : null;
 
